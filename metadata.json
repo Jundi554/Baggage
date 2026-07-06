@@ -1,0 +1,6 @@
+{
+  "name": "Baggage Tracker",
+  "description": "A smart calendar to parse and track baggage service advertisements using AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
