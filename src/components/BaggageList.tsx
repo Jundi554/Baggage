@@ -194,7 +194,7 @@ Info lebih lanjut silakan hubungi kontak tertera.`;
               {!isPast && event.phoneNumbers && event.phoneNumbers.length > 0 && event.phoneNumbers.map((phone, idx) => (
                 <a
                   key={idx}
-                  href={`https://wa.me/${phone}`}
+                  href={`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Apakah bagasi untuk tanggal ${event.departureDate ? format(parseISO(event.departureDate), 'd MMMM yyyy', { locale: id }) : 'tersebut'} dari ${event.route} masih tersedia? `)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 transition-colors py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-green-400"
