@@ -1,0 +1,17 @@
+{
+  "collections": {
+    "baggage_events": {
+      "userId": "string",
+      "providerName": "string",
+      "route": "string",
+      "policy": "string",
+      "pricePerKg": "string",
+      "phoneNumbers": "array",
+      "departureDate": "string",
+      "addressCairo": "string",
+      "addressIndonesia": "string",
+      "createdAt": "timestamp",
+      "isCompleted": "boolean"
+    }
+  }
+}

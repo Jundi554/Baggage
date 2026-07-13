@@ -3,10 +3,11 @@ import { UploadCloud, Loader2 } from 'lucide-react';
 import { cn } from '../utils';
 
 interface DropZoneProps {
-  onParse: (text: string) => Promise<void>;
+  onParse?: (text: string) => Promise<void>;
+  isOnline: boolean;
 }
 
-export function DropZone({ onParse }: DropZoneProps) {
+export function DropZone({ onParse, isOnline }: DropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = useState('');
@@ -14,6 +15,7 @@ export function DropZone({ onParse }: DropZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
+    if (!isOnline) return;
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -24,10 +26,14 @@ export function DropZone({ onParse }: DropZoneProps) {
   };
 
   const handleDrop = async (e: React.DragEvent) => {
+    if (!isOnline) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
     setError(null);
+    
+    // ... (rest of the logic)
+    if (!onParse) return;
 
     // Try to get text from drop (if someone dragged selected text)
     const droppedText = e.dataTransfer.getData('text');
@@ -55,7 +61,7 @@ export function DropZone({ onParse }: DropZoneProps) {
   };
 
   const processText = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim() || !onParse) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -83,6 +89,7 @@ export function DropZone({ onParse }: DropZoneProps) {
       <div 
         className={cn(
           "border-2 border-dashed rounded-2xl p-6 text-center transition-colors mb-4 relative",
+          !isOnline ? "border-red-400/20 bg-red-900/10 cursor-not-allowed" : 
           isDragging ? "border-indigo-400 bg-indigo-500/10" : "border-white/20 hover:bg-white/5",
           isLoading ? "opacity-50 pointer-events-none" : ""
         )}
@@ -91,11 +98,11 @@ export function DropZone({ onParse }: DropZoneProps) {
         onDragLeave={handleDrag}
         onDrop={handleDrop}
       >
-        <UploadCloud className={cn("w-10 h-10 mx-auto mb-3", isDragging ? "text-indigo-400" : "text-slate-400")} />
+        <UploadCloud className={cn("w-10 h-10 mx-auto mb-3", !isOnline ? "text-red-400" : isDragging ? "text-indigo-400" : "text-slate-400")} />
         <p className="text-sm text-slate-300 mb-1">
-          Tarik & lepas (drag & drop) teks iklan di sini
+          {isOnline ? 'Tarik & lepas (drag & drop) teks iklan di sini' : 'Mode Offline: Tidak dapat menambah jadwal baru'}
         </p>
-        <p className="text-xs text-slate-500">atau file .txt</p>
+        <p className="text-xs text-slate-500">{isOnline ? 'atau file .txt' : ''}</p>
       </div>
 
       <div className="text-center text-xs font-bold text-slate-500 my-3 uppercase tracking-widest">ATAU</div>
@@ -104,17 +111,17 @@ export function DropZone({ onParse }: DropZoneProps) {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Tempel (paste) teks iklan penyedia bagasi di sini..."
+          placeholder={isOnline ? "Tempel (paste) teks iklan penyedia bagasi di sini..." : "Offline mode..."}
           className="w-full h-24 p-4 bg-slate-800/80 border border-white/10 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none placeholder-slate-500"
-          disabled={isLoading}
+          disabled={isLoading || !isOnline}
         />
         
         {error && <p className="text-xs text-red-400 bg-red-400/10 p-2 rounded-lg border border-red-400/20">{error}</p>}
         
         <button
           type="submit"
-          disabled={!text.trim() || isLoading}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
+          disabled={!text.trim() || isLoading || !isOnline}
+          className={cn("w-full text-white text-xs font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg", isOnline ? "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20" : "bg-red-600 shadow-red-600/20")}
         >
           {isLoading ? (
             <>
@@ -122,7 +129,7 @@ export function DropZone({ onParse }: DropZoneProps) {
               MEMPROSES...
             </>
           ) : (
-            'EXTRACT TEXT'
+            isOnline ? 'EXTRACT TEXT' : 'OFFLINE MODE'
           )}
         </button>
       </form>
