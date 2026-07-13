@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { format, parseISO, isSameMonth, differenceInCalendarDays } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { BaggageEvent } from '../types';
-import { PlaneTakeoff, Phone, Package, Info, Calendar, CheckCircle, Trash2, Share2, Facebook, MessageCircle } from 'lucide-react';
+import { Plane, MapPin, Building2, Calendar, FileText, Phone, CheckCircle, Trash2, Share2, Facebook, MessageCircle, Package, PlaneTakeoff, Send, Instagram, Copy } from 'lucide-react';
 
 interface BaggageListProps {
   events: BaggageEvent[];
   currentDate: Date;
-  onSaveToCalendar: (event: BaggageEvent) => void;
   onDeleteEvent: (id: string) => void;
   onClearAll: () => void;
+  showToast?: (msg: string) => void;
 }
 
-export function BaggageList({ events, currentDate, onSaveToCalendar, onDeleteEvent, onClearAll }: BaggageListProps) {
+export function BaggageList({ events, currentDate, onDeleteEvent, onClearAll, showToast }: BaggageListProps) {
   const [routeFilter, setRouteFilter] = useState<'all' | 'jkt-cai' | 'cai-jkt'>('all');
+  const [activeShareMenu, setActiveShareMenu] = useState<string | null>(null);
 
   // Helper to determine route type
   const getRouteType = (route: string): 'jkt-cai' | 'cai-jkt' | 'other' => {
@@ -34,14 +35,14 @@ export function BaggageList({ events, currentDate, onSaveToCalendar, onDeleteEve
     return 'other';
   };
 
-  const shareEvent = (event: BaggageEvent, platform: 'wa' | 'fb') => {
+  const shareEvent = (event: BaggageEvent, platform: 'whatsapp' | 'telegram' | 'messenger' | 'instagram' | 'copy') => {
     const contacts = event.phoneNumbers.map(n => `${n} (wa.me/${n.replace(/\D/g, '')})`).join(', ');
     const price = typeof event.pricePerKg === 'number' ? `Rp ${event.pricePerKg.toLocaleString('id-ID')}/kg` : event.pricePerKg;
     const date = event.departureDate ? format(parseISO(event.departureDate), 'd MMMM yyyy', { locale: id }) : 'Tidak diketahui';
     
     const text = `*INFO BAGASI TERDEKAT*
 
-✈️ : ${event.providerName}
+✈️ : ${event.providerName.toUpperCase()}
 📍 : ${event.route}
 🏤 : ${event.addressCairo || '-'} / ${event.addressIndonesia || '-'}
 📅 : ${date}
@@ -51,11 +52,37 @@ export function BaggageList({ events, currentDate, onSaveToCalendar, onDeleteEve
 
 Info lebih lanjut silakan hubungi kontak tertera.`;
 
-    if (platform === 'wa') {
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    if (platform === 'whatsapp') {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    } else if (platform === 'telegram') {
+      window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(text)}`, '_blank');
+    } else if (platform === 'messenger') {
+      navigator.clipboard.writeText(text);
+      if (showToast) {
+        showToast("Teks disalin ke papan klip! Membuka Messenger...");
+      } else {
+        alert("Teks disalin ke papan klip! Membuka Messenger...");
+      }
+      setTimeout(() => {
+        window.open('https://www.messenger.com/', '_blank');
+      }, 1000);
+    } else if (platform === 'instagram') {
+      navigator.clipboard.writeText(text);
+      if (showToast) {
+        showToast("Teks disalin ke papan klip! Membuka Instagram...");
+      } else {
+        alert("Teks disalin ke papan klip! Membuka Instagram...");
+      }
+      setTimeout(() => {
+        window.open('https://www.instagram.com/', '_blank');
+      }, 1000);
     } else {
-        navigator.clipboard.writeText(text);
-        alert("Teks informasi perjalanan berhasil disalin! Silakan tempel (paste) di Facebook.");
+      navigator.clipboard.writeText(text);
+      if (showToast) {
+        showToast("Teks iklan bagasi berhasil disalin!");
+      } else {
+        alert("Teks iklan bagasi berhasil disalin!");
+      }
     }
   };
   const monthlyEvents = events
@@ -67,7 +94,9 @@ Info lebih lanjut silakan hubungi kontak tertera.`;
     .sort((a, b) => {
       const dateA = a.departureDate ? new Date(a.departureDate).getTime() : 0;
       const dateB = b.departureDate ? new Date(b.departureDate).getTime() : 0;
-      return dateA - dateB;
+      if (dateA !== dateB) return dateA - dateB;
+      
+      return a.providerName.localeCompare(b.providerName);
     });
 
   // Calculate statistics for the active month (always show all stats)
@@ -76,61 +105,58 @@ Info lebih lanjut silakan hubungi kontak tertera.`;
   const caiToJktCount = allMonthlyEvents.filter(e => getRouteType(e.route) === 'cai-jkt').length;
 
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden flex flex-col h-full max-h-[800px]">
-      <div className="px-6 py-5 border-b border-white/10 bg-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <PlaneTakeoff className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-lg font-semibold text-slate-100">
-            Jadwal Terdekat ({format(currentDate, 'MMMM', { locale: id })})
-          </h2>
+    <div className="bg-transparent flex flex-col h-full relative">
+      <div className="sticky top-[56px] z-30 bg-bni-light/95 backdrop-blur-sm pt-1 pb-3 px-1 -mx-1">
+        <div className="px-4 py-3 bg-white border border-bni-teal/20 rounded-xl mb-3 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[17px] font-extrabold text-bni-teal">
+              Jadwal Penerbangan Bulan {format(currentDate, 'MMMM yyyy', { locale: id })}
+            </h2>
+          </div>
+          <button
+            onClick={onClearAll}
+            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-all"
+            title="Hapus Semua"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
         </div>
-        <button
-          onClick={onClearAll}
-          className="px-3 py-1.5 text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-1.5"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Hapus Semua
-        </button>
-      </div>
 
-      {/* Summary Statistics Counter for the month */}
-      <div className="px-5 py-4 bg-white/5 border-b border-white/10 grid grid-cols-2 gap-4">
-        <div 
-          onClick={() => setRouteFilter(routeFilter === 'jkt-cai' ? 'all' : 'jkt-cai')}
-          className={`cursor-pointer border rounded-2xl p-3 flex flex-col justify-between transition-all duration-300 ${
-            routeFilter === 'jkt-cai' 
-              ? 'bg-indigo-600/30 border-indigo-400/60 shadow-[0_0_15px_rgba(79,70,229,0.3)]'
-              : 'bg-indigo-600/10 border-indigo-400/20 hover:bg-indigo-600/20'
-          }`}
-        >
-          <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Jakarta → Kairo</span>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl font-black text-white">{jktToCaiCount}</span>
-            <span className="text-[10px] text-indigo-200">Perjalanan</span>
-          </div>
-        </div>
-        <div 
-          onClick={() => setRouteFilter(routeFilter === 'cai-jkt' ? 'all' : 'cai-jkt')}
-          className={`cursor-pointer border rounded-2xl p-3 flex flex-col justify-between transition-all duration-300 ${
-            routeFilter === 'cai-jkt' 
-              ? 'bg-emerald-600/30 border-emerald-400/60 shadow-[0_0_15px_rgba(5,150,105,0.3)]'
-              : 'bg-emerald-600/10 border-emerald-400/20 hover:bg-emerald-600/20'
-          }`}
-        >
-          <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Kairo → Jakarta</span>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl font-black text-white">{caiToJktCount}</span>
-            <span className="text-[10px] text-emerald-200">Perjalanan</span>
-          </div>
+        {/* Summary Statistics Counter for the month */}
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setRouteFilter(routeFilter === 'jkt-cai' ? 'all' : 'jkt-cai')}
+            className={`flex-1 px-3 py-2 rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${
+              routeFilter === 'jkt-cai' 
+                ? 'bg-[#EAF3F4] border border-bni-teal/30 text-bni-teal shadow-inner'
+                : 'bg-white border border-bni-teal/10 text-bni-dark/70 hover:bg-bni-light/50 shadow-sm'
+            }`}
+          >
+            <span className="text-[13px] font-bold">JKT → CAI</span>
+            <span className="text-xl font-extrabold text-bni-orange">{jktToCaiCount}</span>
+          </button>
+          <button 
+            onClick={() => setRouteFilter(routeFilter === 'cai-jkt' ? 'all' : 'cai-jkt')}
+            className={`flex-1 px-3 py-2 rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${
+              routeFilter === 'cai-jkt' 
+                ? 'bg-[#EAF3F4] border border-bni-teal/30 text-bni-teal shadow-inner'
+                : 'bg-white border border-bni-teal/10 text-bni-dark/70 hover:bg-bni-light/50 shadow-sm'
+            }`}
+          >
+            <span className="text-[13px] font-bold">CAI → JKT</span>
+            <span className="text-xl font-extrabold text-bni-orange">{caiToJktCount}</span>
+          </button>
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-4 relative z-10 custom-scrollbar pt-2 pb-4">
         {monthlyEvents.length === 0 ? (
-          <div className="py-8 text-center flex flex-col items-center">
-            <Package className="w-10 h-10 text-slate-600 mb-3" />
-            <h3 className="text-slate-300 text-sm font-medium mb-1">Tidak ada jadwal bagasi</h3>
-            <p className="text-xs text-slate-500 max-w-[200px] mx-auto">
+          <div className="py-8 text-center flex flex-col items-center bg-white border border-bni-teal/20 rounded-xl shadow-md">
+            <div className="w-12 h-12 bg-bni-light rounded-full flex items-center justify-center mb-3">
+              <Package className="w-6 h-6 text-bni-teal" />
+            </div>
+            <h3 className="text-bni-teal text-[15px] font-extrabold mb-1">Tidak ada jadwal bagasi</h3>
+            <p className="text-[13px] text-bni-dark/70 px-4">
               Belum ada jadwal tersimpan untuk bulan {format(currentDate, 'MMMM yyyy', { locale: id })}.
             </p>
           </div>
@@ -138,128 +164,210 @@ Info lebih lanjut silakan hubungi kontak tertera.`;
           monthlyEvents.map((event) => {
           const days = event.departureDate ? differenceInCalendarDays(parseISO(event.departureDate), new Date()) : null;
           const isPast = days !== null && days < 0;
+          const addressText = [event.addressCairo, event.addressIndonesia]
+             .filter(a => a && a !== 'Tidak Diketahui' && a !== 'Unknown')
+             .join(' / ') || '-';
 
           return (
-          <div key={event.id} className={`p-5 bg-indigo-600/10 backdrop-blur-xl border border-indigo-400/20 rounded-2xl relative transition-all duration-300 ${isPast ? 'opacity-60 grayscale' : 'hover:bg-indigo-600/20'}`}>
-            {event.departureDate && (
-              <div className={`absolute -top-3 right-4 px-3 py-1 rounded-full text-[10px] font-bold text-white shadow-lg flex items-center gap-1 ${isPast ? 'bg-slate-500 shadow-slate-500/20' : 'bg-indigo-500 shadow-indigo-500/20'}`}>
-                <Calendar className="w-3 h-3" />
-                {format(parseISO(event.departureDate), 'd MMM yyyy', { locale: id })}
-              </div>
-            )}
-            {isPast && (
-              <div className="absolute -top-3 left-4 bg-slate-500 px-3 py-1 rounded-full text-[10px] font-bold text-white shadow-lg shadow-slate-500/20 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                SUDAH BERLALU
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 gap-y-4">
-              <div className="space-y-1">
-                <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest">Penyedia Bagasi</p>
-                <p className="text-lg font-semibold text-white">{event.providerName}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest">Rute Perjalanan</p>
-                <p className="text-sm font-semibold text-white">{event.route}</p>
-              </div>
-              <div className="h-px bg-white/10"></div>
-              <div className="space-y-1">
-                <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest">Kebijakan Bagasi</p>
-                <p className="text-sm text-slate-200 leading-relaxed">{event.policy}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest">Biaya Per KG</p>
-                <p className="text-xl font-bold text-green-400">
-                  {typeof event.pricePerKg === 'number' 
-                    ? `Rp ${event.pricePerKg.toLocaleString('id-ID')}`
-                    : event.pricePerKg}
-                  {typeof event.pricePerKg === 'number' && <span className="text-xs text-slate-400 font-normal"> / kg</span>}
-                </p>
-              </div>
-              <div className="h-px bg-white/10"></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest">Alamat Kairo</p>
-                  <p className="text-xs text-slate-300 leading-relaxed">{event.addressCairo || '-'}</p>
+          <div key={event.id} className={`bg-white rounded-xl overflow-hidden relative shadow-md border border-bni-teal/20 mb-4 ${isPast ? 'opacity-70' : ''}`}>
+            {/* Header banner */}
+            <div className="px-4 py-3 flex items-center justify-between border-b border-bni-teal/10 bg-bni-light/45">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-full bg-bni-teal flex items-center justify-center shrink-0 shadow-sm">
+                  <Plane className="w-5 h-5 text-white" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest">Alamat Indonesia</p>
-                  <p className="text-xs text-slate-300 leading-relaxed">{event.addressIndonesia || '-'}</p>
+                <div className="flex flex-col">
+                  <span className="font-extrabold text-bni-teal text-[15px]">{event.providerName.toUpperCase()}</span>
+                  <span className="text-[13px] text-bni-dark/70 flex items-center gap-1">
+                    {days !== null && (
+                      <span className="font-bold text-bni-orange">
+                        {days < 0 ? 'Selesai' : days === 0 ? 'Hari Ini' : `${days} Hari Lagi`} •
+                      </span>
+                    )}
+                    {event.departureDate ? format(parseISO(event.departureDate), 'd MMMM yyyy', { locale: id }) : '-'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="px-4 py-3">
+              <div className="space-y-2">
+                
+                {/* Text Content */}
+                <div className="text-[14px] text-bni-dark">
+                  <div className="flex gap-2.5 mb-1.5">
+                    <span className="font-bold text-bni-teal w-20 shrink-0 flex justify-between select-none">
+                      <span>Rute</span>
+                      <span>:</span>
+                    </span>
+                    <span>{event.route}</span>
+                  </div>
+                  <div className="flex gap-2.5 mb-1.5">
+                    <span className="font-bold text-bni-teal w-20 shrink-0 flex justify-between select-none">
+                      <span>Alamat</span>
+                      <span>:</span>
+                    </span>
+                    <span>{addressText}</span>
+                  </div>
+                  <div className="flex gap-2.5 mb-1.5">
+                    <span className="font-bold text-bni-teal w-20 shrink-0 flex justify-between select-none">
+                      <span>Harga</span>
+                      <span>:</span>
+                    </span>
+                    <span className="font-bold text-bni-orange">
+                      {typeof event.pricePerKg === 'number' 
+                        ? `Rp ${event.pricePerKg.toLocaleString('id-ID')}/kg`
+                        : event.pricePerKg}
+                    </span>
+                  </div>
+                  <div className="flex gap-2.5 mb-1.5">
+                    <span className="font-bold text-bni-teal w-20 shrink-0 flex justify-between select-none">
+                      <span>Ketentuan</span>
+                      <span>:</span>
+                    </span>
+                    <span className="text-[13px] leading-relaxed">{event.policy}</span>
+                  </div>
+                  {!isPast && event.phoneNumbers && event.phoneNumbers.length > 0 && (
+                    <div className="flex gap-2.5">
+                      <span className="font-bold text-bni-teal w-20 shrink-0 flex justify-between select-none">
+                        <span>No. WA</span>
+                        <span>:</span>
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {event.phoneNumbers.map((phone, idx) => (
+                          <a
+                            key={idx}
+                            href={`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Apakah bagasi untuk tanggal ${event.departureDate ? format(parseISO(event.departureDate), 'd MMMM yyyy', { locale: id }) : 'tersebut'} dari ${event.route} masih tersedia? `)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-[#EAF3F4] hover:bg-[#D5E8EA] border border-bni-teal/10 transition-colors rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-bni-teal font-extrabold text-[13px] shadow-sm"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-[#25D366] fill-[#25D366]/10" />
+                            {phone}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3">
-              {!isPast && event.phoneNumbers && event.phoneNumbers.length > 0 && event.phoneNumbers.map((phone, idx) => (
-                <a
-                  key={idx}
-                  href={`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Apakah bagasi untuk tanggal ${event.departureDate ? format(parseISO(event.departureDate), 'd MMMM yyyy', { locale: id }) : 'tersebut'} dari ${event.route} masih tersedia? `)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 transition-colors py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-green-400"
-                >
-                  <Phone className="w-4 h-4" />
-                  HUBUNGI WHATSAPP (+{phone})
-                </a>
-              ))}
-              
-              {!isPast && (
+            {/* Actions Footer */}
+            <div className="px-4 py-2 border-t border-bni-teal/10 bg-bni-light/30 flex items-center justify-end gap-2 text-bni-dark/70 relative">
+              <div className="relative">
                 <button 
-                  onClick={() => onSaveToCalendar(event)}
-                  className="w-full px-6 bg-white/10 hover:bg-white/20 transition-colors py-2.5 rounded-xl text-xs font-bold border border-white/10 text-white flex items-center justify-center gap-2"
+                  onClick={() => setActiveShareMenu(activeShareMenu === event.id ? null : event.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#EAF3F4] hover:bg-[#D5E8EA] text-bni-teal rounded-full transition-colors font-bold text-[13px] shadow-sm"
+                  title="Bagikan Iklan Bagasi"
                 >
-                  <Calendar className="w-4 h-4" />
-                  SIMPAN KE KALENDER
+                  <Share2 className="w-3.5 h-3.5" />
+                  Bagikan Iklan Bagasi
                 </button>
-              )}
 
-              <div className="flex gap-2">
-                <div className={`flex-1 px-4 py-3 rounded-xl border flex flex-col items-center justify-center ${
-                  days === null 
-                    ? 'bg-slate-500/20 border-slate-500/30 text-slate-300'
-                    : days < 0
-                    ? 'bg-slate-500/20 border-slate-500/30 text-slate-300'
-                    : days === 0
-                    ? 'bg-amber-500/20 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
-                    : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    {days === null ? <Calendar className="w-5 h-5" /> : days < 0 ? <CheckCircle className="w-5 h-5" /> : days === 0 ? <PlaneTakeoff className="w-6 h-6 animate-pulse" /> : <Calendar className="w-5 h-5" />}
-                    <span className="text-lg font-black uppercase tracking-wider">
-                      {days === null ? 'Tidak diketahui' : days < 0 ? 'Selesai' : days === 0 ? 'HARI INI' : `${days} HARI LAGI`}
-                    </span>
-                  </div>
-                  {days !== null && days > 0 && <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest mt-0.5">Menuju Keberangkatan</span>}
-                </div>
-                <button 
-                  onClick={() => onDeleteEvent(event.id)}
-                  className="px-4 py-3 bg-red-500/20 hover:bg-red-500/30 transition-colors rounded-xl text-xs font-bold border border-red-500/30 text-red-400 flex items-center justify-center"
-                  title="Hapus perjalanan"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => shareEvent(event, 'wa')}
-                  className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 transition-colors rounded-xl text-xs font-bold border border-green-500/30 text-green-400 flex items-center justify-center"
-                  title="Bagikan ke WhatsApp"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => shareEvent(event, 'fb')}
-                  className="px-4 py-3 bg-blue-600/20 hover:bg-blue-600/30 transition-colors rounded-xl text-xs font-bold border border-blue-600/30 text-blue-400 flex items-center justify-center"
-                  title="Bagikan ke Facebook"
-                >
-                  <Facebook className="w-5 h-5" />
-                </button>
+                {/* Dropdown Menu */}
+                {activeShareMenu === event.id && (
+                  <>
+                    {/* Click outside backdrop */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setActiveShareMenu(null)}
+                    />
+                    <div className="absolute right-0 bottom-full mb-2 w-56 bg-white border border-bni-teal/20 rounded-xl shadow-xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                        <div className="text-[11px] font-extrabold text-bni-teal px-3 py-1.5 border-b border-bni-teal/5 uppercase tracking-wider">
+                          Bagikan Iklan
+                        </div>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {/* WhatsApp */}
+                          <button
+                            onClick={() => {
+                              shareEvent(event, 'whatsapp');
+                              setActiveShareMenu(null);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[13px] font-bold text-bni-dark hover:bg-bni-light rounded-lg transition-colors"
+                          >
+                            <span className="w-6 h-6 rounded-full bg-[#25D366]/10 flex items-center justify-center text-[#25D366]">
+                              <MessageCircle className="w-3.5 h-3.5 fill-[#25D366]/10" />
+                            </span>
+                            WhatsApp
+                          </button>
+
+                          {/* Telegram */}
+                          <button
+                            onClick={() => {
+                              shareEvent(event, 'telegram');
+                              setActiveShareMenu(null);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[13px] font-bold text-bni-dark hover:bg-bni-light rounded-lg transition-colors"
+                          >
+                            <span className="w-6 h-6 rounded-full bg-[#0088cc]/10 flex items-center justify-center text-[#0088cc]">
+                              <Send className="w-3 h-3 text-[#0088cc]" />
+                            </span>
+                            Telegram
+                          </button>
+
+                          {/* Messenger */}
+                          <button
+                            onClick={() => {
+                              shareEvent(event, 'messenger');
+                              setActiveShareMenu(null);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[13px] font-bold text-bni-dark hover:bg-bni-light rounded-lg transition-colors"
+                          >
+                            <span className="w-6 h-6 rounded-full bg-[#0084FF]/10 flex items-center justify-center text-[#0084FF]">
+                              <Facebook className="w-3.5 h-3.5 text-[#0084FF]" />
+                            </span>
+                            Messenger
+                          </button>
+
+                          {/* Instagram */}
+                          <button
+                            onClick={() => {
+                              shareEvent(event, 'instagram');
+                              setActiveShareMenu(null);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[13px] font-bold text-bni-dark hover:bg-bni-light rounded-lg transition-colors"
+                          >
+                            <span className="w-6 h-6 rounded-full bg-[#E1306C]/10 flex items-center justify-center text-[#E1306C]">
+                              <Instagram className="w-3.5 h-3.5 text-[#E1306C]" />
+                            </span>
+                            Instagram
+                          </button>
+                          
+                          <div className="border-t border-bni-teal/5 my-1" />
+                          
+                          {/* Copy Text */}
+                          <button
+                            onClick={() => {
+                              shareEvent(event, 'copy');
+                              setActiveShareMenu(null);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[13px] font-bold text-bni-teal hover:bg-[#EAF3F4] rounded-lg transition-colors"
+                          >
+                            <span className="w-6 h-6 rounded-full bg-bni-teal/10 flex items-center justify-center text-bni-teal">
+                              <Copy className="w-3 h-3 text-bni-teal" />
+                            </span>
+                            Salin Teks Lengkap
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                )}
               </div>
+              <button 
+                onClick={() => onDeleteEvent(event.id)}
+                className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+                title="Hapus"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
           );
         })
         )}
       </div>
+
     </div>
   );
 }

@@ -30,7 +30,7 @@ async function startServer() {
       1. providerName: Nama penyedia bagasi (string, gunakan "Tidak Diketahui" jika tidak ada).
       2. policy: Kebijakan bagasi singkat, misal "Maks 30kg, cairan dilarang" (string).
       3. pricePerKg: Biaya per kg (string atau number, misalnya "Rp 150.000/kg" atau 150000).
-      4. phoneNumbers: Array of strings. Temukan SEMUA nomor telepon di teks. Formatkan nomor sehingga HANYA berisi angka yang diawali kode negara (misal "628123456789", jangan gunakan +).
+      4. phoneNumbers: Array of strings. Temukan SEMUA nomor telepon/whatsapp di teks. Jika ada dua kontak whatsapp atau lebih pada iklan bagasi, maka cantumkan semuanya! Jangan pernah hanya mencantumkan satu saja jika ada lebih dari satu. Formatkan nomor sehingga HANYA berisi angka yang diawali kode negara (misal "628123456789", jangan gunakan +).
       5. addressCairo: Alamat lokasi drop bagasi atau kantor di Kairo, Mesir (string, gunakan "Tidak Diketahui" jika tidak ada).
       6. addressIndonesia: Alamat lokasi drop bagasi atau pengiriman di Indonesia (string, gunakan "Tidak Diketahui" jika tidak ada).
       7. schedules: Array of objects. Setiap object mewakili satu jadwal/rute, memiliki properti:

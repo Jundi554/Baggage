@@ -54,34 +54,34 @@ export function CalendarView({ currentDate, setCurrentDate, events }: CalendarVi
         <div 
           key={day.toString()} 
           className={cn(
-            "p-2 min-h-[100px] border border-white/5 flex flex-col relative transition-colors hover:bg-white/5",
-            !isCurrentMonth && "opacity-40 bg-black/20"
+            "p-1.5 sm:p-2 min-h-[90px] sm:min-h-[120px] border-r border-bni-teal/10 last:border-r-0 flex flex-col relative transition-all duration-300 hover:bg-bni-light/40 group",
+            !isCurrentMonth && "opacity-40 bg-gray-50/30"
           )}
         >
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-1">
             <span className={cn(
-              "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
-              isToday ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "",
-              !isCurrentMonth && !isToday ? "text-slate-500" : "text-slate-300"
+              "text-[13px] font-bold h-7 w-7 flex items-center justify-center rounded-full transition-all duration-300",
+              isToday ? "bg-bni-teal text-white shadow-sm" : "group-hover:bg-bni-light text-[#00414A]",
+              !isCurrentMonth && !isToday && "text-gray-400"
             )}>
               {formattedDate}
             </span>
             {dayEvents.length > 0 && (
-              <span className="text-[10px] bg-indigo-500/30 text-indigo-200 font-bold px-1.5 py-0.5 rounded">
+              <span className="text-[11px] bg-bni-orange text-white font-bold px-1.5 py-0.5 rounded-md shadow-sm">
                 {dayEvents.length}
               </span>
             )}
           </div>
           
-          <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+          <div className="flex-1 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar">
             {dayEvents.map(event => (
               <div 
                 key={event.id} 
-                className="text-xs p-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-lg text-indigo-100 truncate"
-                title={`${event.providerName} - ${event.route}`}
+                className="px-1.5 py-1 bg-[#EAF3F4] hover:bg-[#D5E8EA] border-l-2 border-bni-teal rounded-r-md transition-all duration-300 cursor-default"
+                title={`${event.providerName.toUpperCase()} - ${event.route}`}
               >
-                <div className="font-semibold truncate">{event.providerName}</div>
-                <div className="text-indigo-300 text-[10px] truncate">{event.route}</div>
+                <div className="text-[11px] font-bold text-bni-teal leading-tight truncate">{event.providerName.toUpperCase()}</div>
+                <div className="hidden sm:block text-[10px] text-bni-dark/80 truncate">{event.route}</div>
               </div>
             ))}
           </div>
@@ -89,52 +89,53 @@ export function CalendarView({ currentDate, setCurrentDate, events }: CalendarVi
       );
       day = addDays(day, 1);
     }
-    rows.push(
-      <div className="grid grid-cols-7" key={day.toString()}>
-        {days}
-      </div>
-    );
+    rows.push(days);
     days = [];
   }
 
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
-        <h2 className="text-lg font-bold text-slate-100 capitalize">
+    <div className="bg-white border border-bni-teal/20 rounded-xl flex flex-col h-full shadow-md relative overflow-hidden">
+      
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-b border-bni-teal/10 relative z-10 gap-3 sm:gap-0 bg-white">
+        <h2 className="text-[20px] font-extrabold text-bni-teal capitalize tracking-tight w-full text-center sm:text-left">
           {format(currentDate, 'MMMM yyyy', { locale: id })}
         </h2>
         <div className="flex space-x-2">
           <button 
             onClick={prevMonth}
-            className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-300"
+            className="p-1.5 hover:bg-bni-light/70 rounded-full transition-colors text-bni-teal"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button 
             onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-1 text-sm font-medium text-slate-300 hover:bg-white/10 rounded-md transition-colors"
+            className="px-4 py-1.5 text-[14px] font-bold text-bni-teal border border-bni-teal/30 hover:bg-bni-light rounded-full transition-colors"
           >
             Hari Ini
           </button>
           <button 
             onClick={nextMonth}
-            className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-300"
+            className="p-1.5 hover:bg-bni-light/70 rounded-full transition-colors text-bni-teal"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
       
-      <div className="grid grid-cols-7 bg-white/5 border-b border-white/10">
+      <div className="grid grid-cols-7 bg-bni-light/50 border-b border-bni-teal/10 relative z-10">
         {daysOfWeek.map(dayName => (
-          <div key={dayName} className="py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <div key={dayName} className="py-2.5 text-center text-[13px] font-bold text-bni-dark">
             {dayName}
           </div>
         ))}
       </div>
       
-      <div className="flex flex-col bg-slate-900/50 flex-1">
-        {rows}
+      <div className="flex flex-col flex-1 overflow-hidden bg-white relative z-10">
+        {rows.map((row, i) => (
+          <div className="grid grid-cols-7 flex-1 border-b border-bni-teal/10 last:border-0" key={i}>
+            {row}
+          </div>
+        ))}
       </div>
     </div>
   );
