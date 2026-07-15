@@ -46,24 +46,48 @@ async function startServer() {
       Hanya kembalikan JSON yang valid, tanpa markdown \`\`\`json. Pastikan formatnya sesuai schema di atas.
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          temperature: 0.2
-        }
-      });
+      let jsonStr = "{}";
+      let retries = 3;
+      let lastError: any = null;
 
-      const jsonStr = response.text || "{}";
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-3.5-flash",
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              temperature: 0.2
+            }
+          });
+          jsonStr = response.text || "{}";
+          break; // success
+        } catch (err: any) {
+          lastError = err;
+          const msg = err?.message || "";
+          // Only retry on 503 or 429
+          if (msg.includes("503") || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("high demand")) {
+            console.log(`AI API busy, retrying (${i + 1}/${retries})...`);
+            await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1))); // exponential backoff
+          } else {
+            break; // Break on other errors
+          }
+        }
+      }
+
+      if (lastError && jsonStr === "{}") {
+        throw lastError; // Re-throw to be caught by the outer catch block
+      }
+
       const parsed = JSON.parse(jsonStr);
       
       res.json(parsed);
     } catch (error: any) {
-      console.error("Error parsing baggage text:", error);
-      
       const errorMessage = error?.message || "";
       const errorStr = typeof error === 'object' ? JSON.stringify(error) : "";
+      
+      // Use console.warn instead of console.error to avoid triggering AI Studio's error reporter on expected rate limits
+      console.warn("API AI parsing failed:", errorMessage);
       
       let clientError = "Gagal memproses teks. Silakan coba lagi nanti.";
       

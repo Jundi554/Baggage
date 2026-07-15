@@ -143,7 +143,7 @@ export default function App() {
                 });
               });
               batch.commit().catch(err => {
-                console.error("Auto-sync error:", err);
+                console.warn("Auto-sync error:", err);
                 handleFirestoreError(err, OperationType.WRITE, 'baggage_events');
               });
             }
@@ -152,7 +152,7 @@ export default function App() {
           
           setIsLoadingEvents(false);
         }, (error) => {
-          console.error("Error fetching events:", error);
+          console.warn("Error fetching events:", error);
           setIsLoadingEvents(false);
           // Only show error if we are still authenticated
           if (auth.currentUser) {
@@ -281,7 +281,7 @@ export default function App() {
           });
           await batch.commit();
         } catch (e) {
-          console.error("Error saving to Firestore:", e);
+          console.warn("Error saving to Firestore:", e);
           showToast("Gagal menyimpan ke database.");
           handleFirestoreError(e, OperationType.WRITE, 'baggage_events');
         }
@@ -308,7 +308,7 @@ export default function App() {
       try {
         await deleteDoc(doc(db, 'baggage_events', id));
       } catch (e) {
-        console.error("Error deleting from Firestore:", e);
+        console.warn("Error deleting from Firestore:", e);
         showToast("Gagal menghapus dari database.");
         handleFirestoreError(e, OperationType.DELETE, `baggage_events/${id}`);
       }
@@ -332,7 +332,7 @@ export default function App() {
         });
         await batch.commit();
       } catch (e) {
-        console.error("Error clearing Firestore:", e);
+        console.warn("Error clearing Firestore:", e);
         showToast("Gagal menghapus data dari database.");
         handleFirestoreError(e, OperationType.DELETE, 'baggage_events');
       }
@@ -351,13 +351,13 @@ export default function App() {
     <div className="min-h-screen bg-bni-light text-[#00414A] font-sans flex flex-col selection:bg-orange-100">
       
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full bg-bni-teal text-white shadow-md h-14 flex items-center">
+      <header className="sticky top-0 z-50 w-full bg-bni-teal text-white shadow-md h-12 sm:h-14 flex items-center">
         <div className="max-w-[1400px] w-full mx-auto px-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-bni-orange rounded-full flex items-center justify-center shrink-0 shadow-md">
-              <Plane className="w-5 h-5 text-white" />
+            <div className="w-7 h-7 sm:w-10 sm:h-10 bg-bni-orange rounded-full flex items-center justify-center shrink-0 shadow-md">
+              <Plane className="w-3.5 h-3.5 sm:w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight block">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight block">
               Baggage<span className="text-bni-orange">Tracker</span>
             </h1>
           </div>
@@ -387,11 +387,11 @@ export default function App() {
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-10 h-10 bg-[#004D57] hover:bg-[#003E46] rounded-full text-white/90 cursor-default" title="Tersinkronisasi dengan Cloud">
+                <div className="flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 bg-[#004D57] hover:bg-[#003E46] rounded-full text-white/90 cursor-default" title="Tersinkronisasi dengan Cloud">
                   {isLoadingEvents ? (
-                    <div className="w-2 h-2 bg-bni-orange rounded-full animate-pulse" />
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-bni-orange rounded-full animate-pulse" />
                   ) : (
-                    <Cloud className="w-5 h-5" />
+                    <Cloud className="w-4 h-4 sm:w-5 h-5" />
                   )}
                 </div>
                 <div className="hidden sm:flex items-center px-4 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full transition-colors cursor-pointer">
@@ -399,22 +399,22 @@ export default function App() {
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="w-10 h-10 flex items-center justify-center bg-[#004D57] hover:bg-bni-orange hover:text-white transition-colors rounded-full text-white/90"
+                  className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center bg-[#004D57] hover:bg-bni-orange hover:text-white transition-colors rounded-full text-white/90"
                   title="Keluar"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4 sm:w-5 h-5" />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-10 h-10 bg-[#004D57] rounded-full text-white/80 hidden sm:flex" title="Penyimpanan lokal">
-                  <CloudOff className="w-5 h-5" />
+                <div className="flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 bg-[#004D57] rounded-full text-white/80 hidden sm:flex" title="Penyimpanan lokal">
+                  <CloudOff className="w-4 h-4 sm:w-5 h-5" />
                 </div>
                 <button 
                   onClick={handleLogin}
-                  className="flex items-center gap-2 px-5 py-1.5 bg-bni-orange hover:bg-[#e04f1a] transition-all rounded-full text-white text-[15px] font-bold shadow-md shadow-black/10"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1 sm:py-1.5 bg-bni-orange hover:bg-[#e04f1a] transition-all rounded-full text-white text-[13px] sm:text-[15px] font-bold shadow-md shadow-black/10"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Masuk
                 </button>
               </div>

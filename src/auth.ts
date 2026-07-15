@@ -50,8 +50,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore Error: ', JSON.stringify(errInfo));
+  // Not throwing an error here to prevent uncaught exceptions in async callbacks which crash the applet
 }
 
 const provider = new GoogleAuthProvider();
@@ -86,7 +86,9 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     cachedAccessToken = credential.accessToken;
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
-    console.error('Sign in error:', error);
+    if (error?.code !== 'auth/popup-closed-by-user') {
+      console.warn('Sign in error:', error);
+    }
     throw error;
   } finally {
     isSigningIn = false;
